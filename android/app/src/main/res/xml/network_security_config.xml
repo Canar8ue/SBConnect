@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The Windows receiver is a plain HTTP server on the local network (no TLS),
+  so cleartext HTTP must be allowed. This is limited to cleartext only; all
+  other traffic still uses the platform defaults.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SBConnect</string>
+
+    <!-- Notification channel -->
+    <string name="channel_relay_name">Relay service</string>
+    <string name="channel_relay_desc">Keeps the connection to your PC alive</string>
+    <string name="action_stop">Stop</string>
+
+    <!-- Ongoing notification states -->
+    <string name="notif_connecting">Connecting…</string>
+    <string name="notif_connected">Connected to %1$s</string>
+    <string name="notif_not_connected">Not connected</string>
+
+    <!-- UI sections -->
+    <string name="section_connection">Connection</string>
+    <string name="section_permissions">Permissions</string>
+    <string name="section_file">Send file</string>
+
+    <!-- Inputs -->
+    <string name="hint_host">PC IP address or hostname (e.g. 192.168.1.50)</string>
+    <string name="hint_port">Port</string>
+    <string name="hint_code">Pairing code (shown by the PC)</string>
+
+    <!-- Buttons -->
+    <string name="button_start">Connect / Start</string>
+    <string name="button_stop">Stop</string>
+    <string name="button_notification_access">Grant notification access</string>
+    <string name="button_battery">Battery optimization</string>
+    <string name="button_send_file">Send file</string>
+
+    <!-- Statuses -->
+    <string name="status_not_configured">Not configured. Enter the PC address, then tap Connect.</string>
+    <string name="status_saved">Saved: %1$s:%2$d (relay not started)</string>
+    <string name="status_connecting">Connecting to %1$s…</string>
+    <string name="status_connected">Connected to %1$s</string>
+    <string name="status_not_connected">Could not reach %1$s. Check the address and pairing code.</string>
+    <string name="status_stopped">Relay stopped.</string>
+    <string name="status_sending_file">Sending %1$s…</string>
+    <string name="status_file_sent">Sent %1$s</string>
+    <string name="status_file_failed">File send failed: %1$s</string>
+
+    <!-- Errors / misc -->
+    <string name="error_host_required">Enter the PC IP address or hostname.</string>
+    <string name="error_invalid_port">Port must be a number between 1 and 65535.</string>
+    <string name="error_open_settings">Could not open the settings screen.</string>
+    <string name="error_open_file">Could not open the selected file.</string>
+    <string name="default_file_name">file.bin</string>
+    <string name="unknown_error">unknown error</string>
+    <string name="battery_already_exempt">Already exempt from battery optimization.</string>
+    <string name="battery_intent_failed">Could not open battery optimization settings.</string>
+</resources>

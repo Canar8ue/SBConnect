@@ -1,6 +1,6 @@
 # SBConnect — Progress
 
-> **Status:** Working prototype — both sides built, Windows side tested live.
+> **Status:** Working prototype — both sides built; Android APK built via GitHub Actions CI.
 
 ## What this project is about
 
@@ -46,15 +46,18 @@ default). Every request is authenticated with a shared pairing code.
   (dataSync foreground service), `RelayClient` (HttpURLConnection singleton),
   `MainActivity` (single screen + permissions + SAF file send), `Prefs`. Not yet
   compiled locally — no JDK/Android SDK on this machine.
-- **CI build** — added a GitHub Actions workflow
-  (`.github/workflows/build-android.yml`) that builds the debug APK on push
-  using JDK 17 + Gradle 8.7 and uploads the APK as an artifact. CI is the first
-  real compile of the Android code.
+- **GitHub push + CI build** — pushed the repo to
+  `github.com/Canar8ue/SBConnect` (`main`, commit `e4b7eda`). The GitHub Actions
+  workflow (`.github/workflows/build-android.yml`) built the debug APK
+  successfully on push (JDK 17 + Gradle 8.7) — the first real compile of the
+  Android code passed. The APK was downloaded locally as `SBConnect-debug.apk`
+  (~5.8 MB).
 
 ## Next steps
 
 - [x] Build the Android APK in CI (GitHub Actions workflow added).
-- [ ] Download the built APK artifact and install/test it on a real phone.
+- [x] Download the built APK (saved locally as `SBConnect-debug.apk`).
+- [ ] Install the APK on a phone; grant Notification access + battery exemption.
 - [ ] Run both sides together on a real phone + PC over Wi-Fi and verify pairing.
 - [ ] Allow `python.exe` through Windows Firewall on **Private** networks.
 - [ ] Nice-to-haves: auto-start the receiver on login, auto-reconnect on Android,

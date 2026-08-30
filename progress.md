@@ -101,6 +101,8 @@ SBConnect/
     ├── gradle.properties               # Gradle JVM flags
     ├── gradle/wrapper/
     │   └── gradle-wrapper.properties   # Gradle version pin
+    ├── keystore/
+    │   └── debug.keystore              # pinned debug signing key
     └── app/
         ├── build.gradle.kts            # app module config
         ├── proguard-rules.pro          # release shrink rules

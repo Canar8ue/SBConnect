@@ -53,6 +53,14 @@ default). Every request is authenticated with a shared pairing code.
   Android code passed. The APK was downloaded locally as `SBConnect-debug.apk`
   (~5.8 MB).
 
+- **Notification relay hardening** — fixed RCS/chat notifications being missed:
+  the listener now self-configures from saved settings (works even if the
+  foreground service isn't running), and text extraction handles Messaging-style
+  (chat/SMS/RCS), Inbox-style, and text-lines notifications. Windows toasts now
+  show the source app name. Pinned a debug signing keystore so CI updates install
+  over the previous build without uninstalling (which would reset notification
+  access).
+
 ## Next steps
 
 - [x] Build the Android APK in CI (GitHub Actions workflow added).

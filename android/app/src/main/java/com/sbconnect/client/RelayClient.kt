@@ -44,6 +44,11 @@ object RelayClient {
         this.code = code.trim()
     }
 
+    /** Configure from saved settings so notifications relay even if the foreground service isn't running. */
+    fun configureFromPrefs(context: android.content.Context) {
+        configure(Prefs.getHost(context), Prefs.getPort(context), Prefs.getCode(context))
+    }
+
     private val baseUrl: String
         get() = "http://$host:$port"
 

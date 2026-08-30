@@ -100,11 +100,19 @@ class SBConnectHandler(BaseHTTPRequestHandler):
         except Exception:
             return self._reject(400, "invalid json")
 
-        title = str(data.get("title") or "")
-        text = str(data.get("text") or "")
+        app = str(data.get("app") or "").strip()
+        title = str(data.get("title") or "").strip()
+        text = str(data.get("text") or "").strip()
 
         if title or text:
-            self.app.toast_service.show(title, text)
+            toast_title = app or title or "SBConnect"
+            body_parts = []
+            if title and title != toast_title:
+                body_parts.append(title)
+            if text and text != title:
+                body_parts.append(text)
+            toast_text = "\n".join(body_parts) if body_parts else "(no text)"
+            self.app.toast_service.show(toast_title, toast_text)
         self.app.notifications += 1
         self._send_json(200, {"ok": True})
 

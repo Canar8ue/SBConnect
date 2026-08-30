@@ -34,6 +34,19 @@ jobs:
 
       # The GitHub-hosted Ubuntu runner ships a preinstalled Android SDK
       # (android-34 platform + build-tools 34.0.0), found via ANDROID_HOME.
+      - name: Generate pinned debug keystore (if missing)
+        working-directory: android
+        run: |
+          if [ ! -f keystore/debug.keystore ]; then
+            mkdir -p keystore
+            keytool -genkeypair -v \
+              -keystore keystore/debug.keystore \
+              -alias sbconnect \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass sbconnect -keypass sbconnect \
+              -dname "CN=SBConnect, OU=Dev, O=SBConnect, C=US"
+          fi
+
       - name: Build debug APK
         working-directory: android
         run: gradle assembleDebug --no-daemon
@@ -43,4 +56,11 @@ jobs:
         with:
           name: SBConnect-debug-apk
           path: android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Upload pinned keystore (commit to repo once)
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-keystore
+          path: android/keystore/debug.keystore
           if-no-files-found: error

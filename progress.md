@@ -60,6 +60,11 @@ default). Every request is authenticated with a shared pairing code.
   show the source app name. Pinned a debug signing keystore so CI updates install
   over the previous build without uninstalling (which would reset notification
   access).
+- **Toast rendering fix** — media toasts were silently not displaying: the
+  action-button URIs contained a raw `&`, which made the toast XML invalid
+  (Windows rejected the whole toast). Switched to path-based button URIs
+  (`sbconnect-action://click/<nid>/<action_id>`) and XML-escaped labels; media
+  toasts with buttons now render. Windows-side only — no APK rebuild needed.
 - **Media controls + replies** — added a PC→phone command channel (long-poll
   on `/commands`): media notifications now arrive with play/pause/next buttons
   on the toast, and message notifications get a **Reply** button that opens a

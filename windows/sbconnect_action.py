@@ -4,6 +4,10 @@ Windows launches this script (via the registered sbconnect-action:// protocol)
 when the user clicks a button on a receiver toast. It parses the URI, prompts
 for reply text when needed, and posts the action to the receiver's
 /action-click endpoint, which queues it for the phone.
+
+URIs (path-based so the toast XML never contains a raw '&'):
+  sbconnect-action://click/<nid>/<action_id>   media button
+  sbconnect-action://reply/<nid>               reply to a message
 """
 
 import json
@@ -53,29 +57,26 @@ def _prompt_reply() -> str:
         return ""
 
 
-def _int_param(query: dict, name: str, default: int) -> int:
-    try:
-        return int((query.get(name) or [str(default)])[0])
-    except ValueError:
-        return default
-
-
 def main() -> None:
     if len(sys.argv) < 2:
         return
     uri = sys.argv[1]
     parts = urllib.parse.urlsplit(uri)
-    query = urllib.parse.parse_qs(parts.query)
+    segments = [s for s in parts.path.split("/") if s]
     cfg = _config()
     port = int(cfg.get("port", 45800))
     code = str(cfg.get("pairing_code", ""))
 
-    nid = _int_param(query, "nid", -1)
+    def seg_int(index: int, default: int) -> int:
+        try:
+            return int(segments[index])
+        except (IndexError, ValueError):
+            return default
 
-    if parts.path == "/reply":
-        payload = {"nid": nid, "text": _prompt_reply()}
+    if segments and segments[0] == "reply":
+        payload = {"nid": seg_int(1, -1), "text": _prompt_reply()}
     else:
-        payload = {"nid": nid, "action_id": _int_param(query, "action_id", -1)}
+        payload = {"nid": seg_int(1, -1), "action_id": seg_int(2, -1)}
 
     body = json.dumps(payload).encode("utf-8")
     request = urllib.request.Request(

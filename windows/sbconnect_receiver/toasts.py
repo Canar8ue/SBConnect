@@ -18,6 +18,17 @@ except Exception:  # pragma: no cover - degraded mode if dependency missing
 ACTION_SCHEME = "sbconnect-action://"
 
 
+def _xml_escape(value: str) -> str:
+    """Escape a string for safe use inside a toast XML attribute."""
+    return (
+        value.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+        .replace("'", "&apos;")
+    )
+
+
 class ToastService:
     """Queue toasts so HTTP worker threads never block on the toast API."""
 
@@ -58,9 +69,13 @@ class ToastService:
             msg=text,
             duration="long" if has_buttons else "short",
         )
+        # Path-based URIs (no '&') so the toast XML stays valid; the helper
+        # parses the path segments. Labels are XML-escaped defensively.
         if can_reply:
-            toast.add_actions("Reply", f"{ACTION_SCHEME}reply?nid={nid}")
+            toast.add_actions("Reply", f"{ACTION_SCHEME}reply/{nid}")
         for action_id, label in actions:
             if label:
-                toast.add_actions(label, f"{ACTION_SCHEME}click?nid={nid}&action_id={action_id}")
+                toast.add_actions(
+                    _xml_escape(label), f"{ACTION_SCHEME}click/{nid}/{action_id}"
+                )
         toast.show()

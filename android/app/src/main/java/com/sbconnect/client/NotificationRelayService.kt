@@ -130,9 +130,10 @@ class NotificationRelayService : NotificationListenerService() {
 
     private fun extractArtwork(notification: Notification): String? {
         try {
-            // 1. Try largeIcon (Icon) on API 23+
+            // 1. Try getLargeIcon() (Icon) on API 23+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                notification.largeIcon?.let { icon ->
+                val icon = notification.getLargeIcon()
+                if (icon != null) {
                     val drawable = icon.loadDrawable(this)
                     if (drawable != null) {
                         val bmp = drawableToBitmap(drawable)
@@ -141,7 +142,14 @@ class NotificationRelayService : NotificationListenerService() {
                 }
             }
 
-            // 2. Try EXTRA_LARGE_ICON parcelable
+            // 2. Try the legacy largeIcon Bitmap field
+            @Suppress("DEPRECATION")
+            val legacyBitmap = notification.largeIcon
+            if (legacyBitmap != null) {
+                return bitmapToBase64(legacyBitmap)
+            }
+
+            // 3. Try EXTRA_LARGE_ICON parcelable
             val extraLarge = notification.extras.get(Notification.EXTRA_LARGE_ICON)
             if (extraLarge is Bitmap) {
                 return bitmapToBase64(extraLarge)
@@ -153,7 +161,7 @@ class NotificationRelayService : NotificationListenerService() {
                 }
             }
 
-            // 3. Try EXTRA_PICTURE
+            // 4. Try EXTRA_PICTURE
             val picture = notification.extras.get(Notification.EXTRA_PICTURE)
             if (picture is Bitmap) {
                 return bitmapToBase64(picture)

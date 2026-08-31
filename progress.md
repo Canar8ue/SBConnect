@@ -60,12 +60,19 @@ default). Every request is authenticated with a shared pairing code.
   show the source app name. Pinned a debug signing keystore so CI updates install
   over the previous build without uninstalling (which would reset notification
   access).
+- **Media controls + replies** — added a PC→phone command channel (long-poll
+  on `/commands`): media notifications now arrive with play/pause/next buttons
+  on the toast, and message notifications get a **Reply** button that opens a
+  text box on the PC and injects the reply on the phone (RemoteInput). Windows
+  side tested end-to-end (button → helper → receiver → command delivered).
 
 ## Next steps
 
 - [x] Build the Android APK in CI (GitHub Actions workflow added).
 - [x] Download the built APK (saved locally as `SBConnect-debug.apk`).
 - [ ] Install the APK on a phone; grant Notification access + battery exemption.
+- [ ] Test media buttons (play/pause/skip) with a real music app.
+- [ ] Test replying to a text from the PC (Google Messages).
 - [ ] Run both sides together on a real phone + PC over Wi-Fi and verify pairing.
 - [ ] Allow `python.exe` through Windows Firewall on **Private** networks.
 - [ ] Nice-to-haves: auto-start the receiver on login, auto-reconnect on Android,
@@ -86,6 +93,7 @@ SBConnect/
 │   ├── README.md                       # receiver setup docs
 │   ├── requirements.txt                # Python dependencies
 │   ├── run.bat                         # double-click launcher
+│   ├── sbconnect_action.py             # toast button helper
 │   └── sbconnect_receiver/
 │       ├── __init__.py                 # package metadata
 │       ├── __main__.py                 # entry point (tray+server)
@@ -113,6 +121,7 @@ SBConnect/
             │   ├── RelayService.kt     # foreground service
             │   ├── NotificationRelayService.kt  # notification listener
             │   ├── RelayClient.kt      # HTTP client
+            │   ├── ActionStore.kt      # action storage/execution
             │   └── Prefs.kt            # settings storage
             └── res/
                 ├── layout/activity_main.xml            # screen layout

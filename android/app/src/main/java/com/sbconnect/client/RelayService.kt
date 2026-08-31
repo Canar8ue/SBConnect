@@ -9,11 +9,13 @@ import android.content.Context
 import android.content.Intent
 import android.os.IBinder
 import android.util.Log
+import org.json.JSONObject
 
 /**
  * Persistent foreground service that keeps the process (and therefore the
- * notification listener + network link) alive. It configures [RelayClient]
- * and reflects the connection state in its ongoing notification.
+ * notification listener + network link) alive. It configures [RelayClient],
+ * reflects the connection state in its ongoing notification, and runs the
+ * PC→phone command channel for media buttons and replies.
  */
 class RelayService : Service() {
 
@@ -70,14 +72,27 @@ class RelayService : Service() {
 
         startForeground(NOTIFICATION_ID, buildNotification(getString(R.string.notif_connecting)))
         pingAndUpdate()
+        RelayClient.startCommandChannel { cmd -> handleCommand(cmd) }
 
         Log.d(TAG, "RelayService started for $host:$port")
         return START_STICKY
     }
 
     override fun onDestroy() {
+        RelayClient.stopCommandChannel()
         stopForeground(STOP_FOREGROUND_REMOVE)
         super.onDestroy()
+    }
+
+    /** Execute a command that arrived from the PC (toast button click). */
+    private fun handleCommand(cmd: JSONObject) {
+        when (cmd.optString("type")) {
+            "action" -> ActionStore.executeMediaAction(
+                cmd.optInt("nid", -1),
+                cmd.optInt("action_id", -1)
+            )
+            "reply" -> ActionStore.executeReply(this, cmd.optInt("nid", -1), cmd.optString("text"))
+        }
     }
 
     private fun pingAndUpdate() {

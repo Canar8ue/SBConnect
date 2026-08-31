@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import queue
 import time
 import urllib.parse
 from datetime import datetime
@@ -16,6 +17,7 @@ log = logging.getLogger("sbconnect.server")
 
 MAX_NOTIFY_BYTES = 64 * 1024
 CHUNK = 64 * 1024
+COMMAND_HOLD_SECONDS = 30.0
 
 
 class App:
@@ -28,6 +30,7 @@ class App:
         self.started_at = datetime.now()
         self.notifications = 0
         self.files = 0
+        self.command_queue: "queue.Queue[dict]" = queue.Queue()
 
 
 class SBConnectHandler(BaseHTTPRequestHandler):
@@ -76,6 +79,8 @@ class SBConnectHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
             self.wfile.write(body)
+        elif path == "/commands":
+            self._handle_commands()
         else:
             self._reject(404, "not found")
 
@@ -87,10 +92,42 @@ class SBConnectHandler(BaseHTTPRequestHandler):
             self._handle_notify()
         elif path == "/file":
             self._handle_file()
+        elif path == "/action-click":
+            self._handle_action_click()
         else:
             self._reject(404, "not found")
 
     # ---- handlers ------------------------------------------------------
+    def _handle_commands(self) -> None:
+        """Long-poll: hold the connection until a command is queued or a timeout."""
+        try:
+            cmd = self.app.command_queue.get(timeout=COMMAND_HOLD_SECONDS)
+        except queue.Empty:
+            cmd = None
+        self._send_json(200, {"command": cmd})
+
+    def _handle_action_click(self) -> None:
+        """A toast button was clicked on this PC; queue the command for the phone."""
+        length = int(self.headers.get("Content-Length") or 0)
+        if length <= 0 or length > MAX_NOTIFY_BYTES:
+            return self._reject(400, "bad content length")
+        try:
+            data = json.loads(self.rfile.read(length).decode("utf-8"))
+        except Exception:
+            return self._reject(400, "invalid json")
+
+        nid = data.get("nid")
+        if "text" in data and data["text"] is not None:
+            cmd = {"type": "reply", "nid": nid, "text": str(data.get("text") or "")}
+        else:
+            try:
+                action_id = int(data.get("action_id") or -1)
+            except (TypeError, ValueError):
+                action_id = -1
+            cmd = {"type": "action", "nid": nid, "action_id": action_id}
+        self.app.command_queue.put(cmd)
+        self._send_json(200, {"ok": True})
+
     def _handle_notify(self) -> None:
         length = int(self.headers.get("Content-Length") or 0)
         if length <= 0 or length > MAX_NOTIFY_BYTES:
@@ -103,6 +140,14 @@ class SBConnectHandler(BaseHTTPRequestHandler):
         app = str(data.get("app") or "").strip()
         title = str(data.get("title") or "").strip()
         text = str(data.get("text") or "").strip()
+        nid = data.get("nid")
+        can_reply = bool(data.get("can_reply"))
+        actions = []
+        for item in data.get("actions") or []:
+            try:
+                actions.append((int(item.get("id", -1)), str(item.get("label") or "")))
+            except (TypeError, ValueError):
+                continue
 
         if title or text:
             toast_title = app or title or "SBConnect"
@@ -112,7 +157,13 @@ class SBConnectHandler(BaseHTTPRequestHandler):
             if text and text != title:
                 body_parts.append(text)
             toast_text = "\n".join(body_parts) if body_parts else "(no text)"
-            self.app.toast_service.show(toast_title, toast_text)
+            self.app.toast_service.show(
+                toast_title,
+                toast_text,
+                nid=nid,
+                can_reply=can_reply,
+                actions=actions,
+            )
         self.app.notifications += 1
         self._send_json(200, {"ok": True})
 

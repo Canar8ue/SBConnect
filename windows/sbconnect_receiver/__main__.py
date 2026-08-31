@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import logging
 import os
+import sys
 import threading
 import webbrowser
 
@@ -12,6 +13,8 @@ from .config import Config, config_dir
 from .paths import downloads_dir
 from .server import App, SBConnectServer
 from .toasts import ToastService
+
+log = logging.getLogger("sbconnect")
 
 
 def setup_logging(level: int = logging.INFO) -> None:
@@ -72,6 +75,30 @@ def run_tray(app: App) -> None:
     icon.run()
 
 
+def register_action_protocol() -> None:
+    """Register the sbconnect-action:// protocol so toast buttons can reach us."""
+    import winreg
+    from pathlib import Path
+
+    helper = Path(__file__).resolve().parent.parent / "sbconnect_action.py"
+    python_exe = Path(sys.executable)
+    pyw = python_exe.with_name("pythonw.exe")
+    if not pyw.exists():
+        pyw = python_exe
+    command = f'"{pyw}" "{helper}" "%1"'
+
+    base = r"Software\Classes\sbconnect-action"
+    try:
+        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, base) as key:
+            winreg.SetValueEx(key, "", 0, winreg.REG_SZ, "URL:sbconnect-action")
+            winreg.SetValueEx(key, "URL Protocol", 0, winreg.REG_SZ, "")
+        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, base + r"\shell\open\command") as key:
+            winreg.SetValueEx(key, "", 0, winreg.REG_SZ, command)
+        log.info("Registered sbconnect-action protocol -> %s", helper)
+    except Exception:
+        log.exception("Failed to register action protocol")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="SBConnect Windows Receiver")
     parser.add_argument("--port", type=int, default=None, help="override port")
@@ -82,6 +109,8 @@ def main() -> None:
 
     setup_logging(logging.DEBUG if args.debug else logging.INFO)
     log = logging.getLogger("sbconnect")
+
+    register_action_protocol()
 
     config = Config.load()
     if args.port:

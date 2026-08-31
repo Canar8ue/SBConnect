@@ -29,11 +29,28 @@ def _generate_code(length: int = 6) -> str:
     return "".join(secrets.choice(alphabet) for _ in range(length))
 
 
+VALID_POSITIONS = ("top-right", "top-left", "bottom-right", "bottom-left")
+
+
+def _clamp_opacity(value) -> float:
+    try:
+        return max(0.30, min(1.0, float(value)))
+    except (TypeError, ValueError):
+        return 0.90
+
+
+def _valid_position(value) -> str:
+    v = (str(value or "")).strip().lower().replace("_", "-")
+    return v if v in VALID_POSITIONS else "top-right"
+
+
 @dataclass
 class Config:
     port: int = DEFAULT_PORT
     pairing_code: str = ""
     host: str = "0.0.0.0"
+    panel_opacity: float = 0.90
+    panel_position: str = "top-right"
 
     def save(self) -> None:
         config_path().write_text(json.dumps(asdict(self), indent=2), encoding="utf-8")
@@ -49,6 +66,8 @@ class Config:
                     port=int(data.get("port", DEFAULT_PORT)),
                     pairing_code=str(data.get("pairing_code", "")),
                     host=str(data.get("host", "0.0.0.0")),
+                    panel_opacity=_clamp_opacity(data.get("panel_opacity", 0.90)),
+                    panel_position=_valid_position(data.get("panel_position", "top-right")),
                 )
             except Exception:
                 cfg = Config()

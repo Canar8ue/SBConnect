@@ -5,14 +5,13 @@ from __future__ import annotations
 import argparse
 import logging
 import os
-import sys
 import threading
 import webbrowser
 
 from .config import Config, config_dir
+from .notifications import NotificationService
 from .paths import downloads_dir
 from .server import App, SBConnectServer
-from .toasts import ToastService
 
 log = logging.getLogger("sbconnect")
 
@@ -48,11 +47,28 @@ def _open_status(app: App) -> None:
 
 
 def _show_code(app: App) -> None:
-    app.toast_service.show("SBConnect pairing code", app.config.pairing_code)
+    app.notification_service.show("SBConnect pairing code", app.config.pairing_code)
 
 
 def _open_downloads(app: App) -> None:
     os.startfile(str(app.downloads))  # type: ignore[attr-defined]
+
+
+def _quit(app: App) -> None:
+    """Stop the tray icon (if running) and signal the main loop to exit."""
+    icon = getattr(app, "tray_icon", None)
+    if icon is not None:
+        try:
+            icon.stop()
+        except Exception:
+            pass
+    app.quit_event.set()
+
+
+def _save_panel_settings(config, opacity, position) -> None:
+    config.panel_opacity = opacity
+    config.panel_position = position
+    config.save()
 
 
 def run_tray(app: App) -> None:
@@ -72,31 +88,8 @@ def run_tray(app: App) -> None:
             pystray.MenuItem("Quit", lambda icon, item: icon.stop()),
         ),
     )
+    app.tray_icon = icon
     icon.run()
-
-
-def register_action_protocol() -> None:
-    """Register the sbconnect-action:// protocol so toast buttons can reach us."""
-    import winreg
-    from pathlib import Path
-
-    helper = Path(__file__).resolve().parent.parent / "sbconnect_action.py"
-    python_exe = Path(sys.executable)
-    pyw = python_exe.with_name("pythonw.exe")
-    if not pyw.exists():
-        pyw = python_exe
-    command = f'"{pyw}" "{helper}" "%1"'
-
-    base = r"Software\Classes\sbconnect-action"
-    try:
-        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, base) as key:
-            winreg.SetValueEx(key, "", 0, winreg.REG_SZ, "URL:sbconnect-action")
-            winreg.SetValueEx(key, "URL Protocol", 0, winreg.REG_SZ, "")
-        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, base + r"\shell\open\command") as key:
-            winreg.SetValueEx(key, "", 0, winreg.REG_SZ, command)
-        log.info("Registered sbconnect-action protocol -> %s", helper)
-    except Exception:
-        log.exception("Failed to register action protocol")
 
 
 def main() -> None:
@@ -110,8 +103,6 @@ def main() -> None:
     setup_logging(logging.DEBUG if args.debug else logging.INFO)
     log = logging.getLogger("sbconnect")
 
-    register_action_protocol()
-
     config = Config.load()
     if args.port:
         config.port = args.port
@@ -119,9 +110,25 @@ def main() -> None:
         config.host = args.host
     config.save()
 
-    toast_service = ToastService()
     downloads = downloads_dir()
-    app = App(config, toast_service, downloads)
+    app = App(config, None, downloads)
+
+    # The panel needs to enqueue commands for the phone and reach the tray
+    # actions, so wire it to the app and then attach the service.
+    notifications = NotificationService(
+        on_command=app.command_queue.put,
+        on_status=lambda: _open_status(app),
+        on_code=lambda: _show_code(app),
+        on_downloads=lambda: _open_downloads(app),
+        on_quit=lambda: _quit(app),
+        opacity=config.panel_opacity,
+        position=config.panel_position,
+        on_settings_save=lambda opacity, position: _save_panel_settings(
+            config, opacity, position
+        ),
+    )
+    app.notification_service = notifications
+    notifications.start()
 
     server = SBConnectServer((config.host, config.port), app)
     thread = threading.Thread(target=server.serve_forever, name="http-server", daemon=True)
@@ -134,12 +141,11 @@ def main() -> None:
     if args.no_tray:
         log.info("Running headless. Press Ctrl+C to stop.")
         try:
-            while True:
-                threading.Event().wait(1)
+            app.quit_event.wait()
         except KeyboardInterrupt:
             pass
     else:
-        toast_service.show(
+        notifications.show(
             "SBConnect is ready",
             f"Pairing code: {config.pairing_code}\nPort: {config.port}",
         )
@@ -147,6 +153,7 @@ def main() -> None:
 
     server.shutdown()
     server.server_close()
+    notifications.stop()
 
 
 if __name__ == "__main__":

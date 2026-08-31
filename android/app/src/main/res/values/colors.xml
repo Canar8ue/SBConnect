@@ -1,7 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="primary">#FF2D5C8E</color>
-    <color name="primary_dark">#FF1B3B5C</color>
-    <color name="secondary">#FF4CAF50</color>
-    <color name="on_primary">#FFFFFFFF</color>
+    <!-- Material 3 / Material You Color Tokens -->
+    <color name="primary">#A8C7FA</color>
+    <color name="on_primary">#041E49</color>
+    <color name="primary_container">#004A77</color>
+    <color name="on_primary_container">#D3E3FD</color>
+
+    <color name="secondary">#80DCA0</color>
+    <color name="on_secondary">#00381B</color>
+    <color name="secondary_container">#00522B</color>
+    <color name="on_secondary_container">#9DF7BA</color>
+
+    <color name="surface">#111318</color>
+    <color name="surface_container">#1E2025</color>
+    <color name="surface_container_high">#282A2F</color>
+    <color name="surface_container_highest">#33353A</color>
+
+    <color name="on_surface">#E2E2E6</color>
+    <color name="on_surface_variant">#C4C6D0</color>
+    <color name="outline">#44474F</color>
+    <color name="outline_variant">#2E3036</color>
+
+    <color name="status_active">#80DCA0</color>
+    <color name="status_inactive">#909094</color>
+    <color name="status_error">#FFB4AB</color>
 </resources>

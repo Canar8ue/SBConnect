@@ -2,20 +2,27 @@ package com.sbconnect.client
 
 import android.app.Notification
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
+import android.graphics.drawable.Icon
 import android.os.Build
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
+import android.util.Base64
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import java.io.ByteArrayOutputStream
 import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Notification listener that captures incoming notifications and relays them
  * to the Windows receiver via [RelayClient].
  *
- * Media (ongoing) notifications are relayed with their action buttons so the
- * PC can control playback; message notifications expose a "Reply" action when
- * the app provides one. The listener self-configures from saved settings.
+ * Media (ongoing) notifications are relayed with their action buttons and album
+ * artwork so the PC can display the cover art and control playback; message
+ * notifications expose a "Reply" action when the app provides one.
  */
 class NotificationRelayService : NotificationListenerService() {
 
@@ -66,8 +73,17 @@ class NotificationRelayService : NotificationListenerService() {
 
         val nid = if (replyAction != null) ActionStore.putReply(sbn.key, replyAction) else -1
         val type = if (replyAction != null) "message" else "normal"
-        RelayClient.sendNotification(title, text, app, nid = nid, type = type, canReply = replyAction != null)
-        Log.d(TAG, "Relayed notification from $app")
+        val art = extractArtwork(notification)
+        RelayClient.sendNotification(
+            title,
+            text,
+            app,
+            nid = nid,
+            type = type,
+            canReply = replyAction != null,
+            art = art,
+        )
+        Log.d(TAG, "Relayed notification from $app (type=$type)")
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification?) {
@@ -90,8 +106,17 @@ class NotificationRelayService : NotificationListenerService() {
 
         val nid = ActionStore.putMedia(sbn.key, actions)
         val actionPairs = actions.mapIndexed { index, action -> index to action.title?.toString().orEmpty() }
-        RelayClient.sendNotification(title, text, app, nid = nid, type = "media", actions = actionPairs)
-        Log.d(TAG, "Relayed media from $app")
+        val art = extractArtwork(notification)
+        RelayClient.sendNotification(
+            title,
+            text,
+            app,
+            nid = nid,
+            type = "media",
+            actions = actionPairs,
+            art = art,
+        )
+        Log.d(TAG, "Relayed media from $app (hasArt=${art != null})")
     }
 
     private fun isMediaNotification(notification: Notification): Boolean {
@@ -103,12 +128,71 @@ class NotificationRelayService : NotificationListenerService() {
         return keys.any { key -> titles.any { it.contains(key) } }
     }
 
+    private fun extractArtwork(notification: Notification): String? {
+        try {
+            // 1. Try largeIcon (Icon) on API 23+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                notification.largeIcon?.let { icon ->
+                    val drawable = icon.loadDrawable(this)
+                    if (drawable != null) {
+                        val bmp = drawableToBitmap(drawable)
+                        if (bmp != null) return bitmapToBase64(bmp)
+                    }
+                }
+            }
+
+            // 2. Try EXTRA_LARGE_ICON parcelable
+            val extraLarge = notification.extras.get(Notification.EXTRA_LARGE_ICON)
+            if (extraLarge is Bitmap) {
+                return bitmapToBase64(extraLarge)
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && extraLarge is Icon) {
+                val drawable = extraLarge.loadDrawable(this)
+                if (drawable != null) {
+                    val bmp = drawableToBitmap(drawable)
+                    if (bmp != null) return bitmapToBase64(bmp)
+                }
+            }
+
+            // 3. Try EXTRA_PICTURE
+            val picture = notification.extras.get(Notification.EXTRA_PICTURE)
+            if (picture is Bitmap) {
+                return bitmapToBase64(picture)
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to extract artwork", e)
+        }
+        return null
+    }
+
+    private fun drawableToBitmap(drawable: Drawable): Bitmap? {
+        if (drawable is BitmapDrawable && drawable.bitmap != null) {
+            return drawable.bitmap
+        }
+        val w = if (drawable.intrinsicWidth > 0) drawable.intrinsicWidth else 256
+        val h = if (drawable.intrinsicHeight > 0) drawable.intrinsicHeight else 256
+        val bitmap = Bitmap.createBitmap(w.coerceIn(64, 512), h.coerceIn(64, 512), Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        drawable.setBounds(0, 0, canvas.width, canvas.height)
+        drawable.draw(canvas)
+        return bitmap
+    }
+
+    private fun bitmapToBase64(bitmap: Bitmap): String {
+        val maxDim = 256
+        val scale = minOf(1f, maxDim.toFloat() / maxOf(bitmap.width, bitmap.height))
+        val targetW = (bitmap.width * scale).toInt().coerceAtLeast(1)
+        val targetH = (bitmap.height * scale).toInt().coerceAtLeast(1)
+        val scaled = if (scale < 1f) Bitmap.createScaledBitmap(bitmap, targetW, targetH, true) else bitmap
+        val stream = ByteArrayOutputStream()
+        scaled.compress(Bitmap.CompressFormat.JPEG, 85, stream)
+        return Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP)
+    }
+
     private fun extractTitle(notification: Notification): String =
         notification.extras.getCharSequence(Notification.EXTRA_TITLE)
             ?.toString()?.trim().orEmpty()
 
     private fun extractText(notification: Notification, title: String): String {
-        // Messaging-style (chat / SMS / RCS) — richest source of message text.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             val style = NotificationCompat.MessagingStyle
                 .extractMessagingStyleFromNotification(notification)

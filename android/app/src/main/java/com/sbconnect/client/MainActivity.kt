@@ -3,6 +3,7 @@ package com.sbconnect.client
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -18,8 +19,8 @@ import androidx.core.content.ContextCompat
 import com.sbconnect.client.databinding.ActivityMainBinding
 
 /**
- * Single-screen entry point: configure the receiver, start/stop the relay,
- * grant the required permissions, and send a file.
+ * Android Settings style entry point: configure the receiver, start/stop the relay,
+ * grant the required permissions, and send files.
  */
 class MainActivity : AppCompatActivity() {
 
@@ -40,6 +41,7 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        setupStatusIndicator()
         prefillFromPrefs()
 
         binding.buttonStart.setOnClickListener { onStartClicked() }
@@ -52,6 +54,14 @@ class MainActivity : AppCompatActivity() {
         showSavedStatus()
     }
 
+    private fun setupStatusIndicator() {
+        val dot = GradientDrawable().apply {
+            shape = GradientDrawable.OVAL
+            setColor(ContextCompat.getColor(this@MainActivity, R.color.status_inactive))
+        }
+        binding.indicatorStatus.background = dot
+    }
+
     private fun prefillFromPrefs() {
         binding.inputHost.setText(Prefs.getHost(this))
         binding.inputPort.setText(Prefs.getPort(this).toString())
@@ -59,16 +69,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onStartClicked() {
-        val host = binding.inputHost.text.toString().trim()
-        val port = binding.inputPort.text.toString().trim().toIntOrNull()
-        val code = binding.inputCode.text.toString().trim()
+        val host = binding.inputHost.text?.toString()?.trim().orEmpty()
+        val port = binding.inputPort.text?.toString()?.trim()?.toIntOrNull()
+        val code = binding.inputCode.text?.toString()?.trim().orEmpty()
 
         if (host.isEmpty()) {
-            setStatus(getString(R.string.error_host_required))
+            setStatus(getString(R.string.error_host_required), R.color.status_error)
             return
         }
         if (port == null || port !in 1..65535) {
-            setStatus(getString(R.string.error_invalid_port))
+            setStatus(getString(R.string.error_invalid_port), R.color.status_error)
             return
         }
 
@@ -77,20 +87,21 @@ class MainActivity : AppCompatActivity() {
         Prefs.setCode(this, code)
 
         RelayService.start(this, host, port, code)
-        setStatus(getString(R.string.status_connecting, host))
+        setStatus(getString(R.string.status_connecting, host), R.color.primary)
 
-        // Also do an immediate ping so the button gives direct feedback.
+        // Immediate ping for fast visual feedback
         RelayClient.ping(host, port, code) { ok ->
-            setStatus(
-                if (ok) getString(R.string.status_connected, host)
-                else getString(R.string.status_not_connected, host)
-            )
+            if (ok) {
+                setStatus(getString(R.string.status_connected, host), R.color.status_active)
+            } else {
+                setStatus(getString(R.string.status_not_connected, host), R.color.status_error)
+            }
         }
     }
 
     private fun onStopClicked() {
         RelayService.stop(this)
-        setStatus(getString(R.string.status_stopped))
+        setStatus(getString(R.string.status_stopped), R.color.status_inactive)
     }
 
     private fun openNotificationAccessSettings() {
@@ -125,7 +136,6 @@ class MainActivity : AppCompatActivity() {
         var name = getString(R.string.default_file_name)
         var size = -1L
 
-        // Read the display name and byte size from the document provider.
         try {
             contentResolver.query(uri, null, null, null, null)?.use { cursor ->
                 if (cursor.moveToFirst()) {
@@ -151,18 +161,18 @@ class MainActivity : AppCompatActivity() {
         }
 
         if (inputStream == null) {
-            setStatus(getString(R.string.error_open_file))
+            setStatus(getString(R.string.error_open_file), R.color.status_error)
             return
         }
 
-        setStatus(getString(R.string.status_sending_file, name))
+        setStatus(getString(R.string.status_sending_file, name), R.color.primary)
         RelayClient.sendFile(inputStream, name, { ok, error ->
             val message = if (ok) {
                 getString(R.string.status_file_sent, name)
             } else {
                 getString(R.string.status_file_failed, error ?: getString(R.string.unknown_error))
             }
-            setStatus(message)
+            setStatus(message, if (ok) R.color.status_active else R.color.status_error)
             Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
         }, contentLength = size)
     }
@@ -183,13 +193,18 @@ class MainActivity : AppCompatActivity() {
     private fun showSavedStatus() {
         val host = Prefs.getHost(this)
         if (host.isEmpty()) {
-            setStatus(getString(R.string.status_not_configured))
+            setStatus(getString(R.string.status_not_configured), R.color.status_inactive)
         } else {
-            setStatus(getString(R.string.status_saved, host, Prefs.getPort(this)))
+            setStatus(getString(R.string.status_saved, host, Prefs.getPort(this)), R.color.status_inactive)
         }
     }
 
-    private fun setStatus(text: String) {
+    private fun setStatus(text: String, colorRes: Int = R.color.status_inactive) {
         binding.textStatus.text = text
+        val dot = GradientDrawable().apply {
+            shape = GradientDrawable.OVAL
+            setColor(ContextCompat.getColor(this@MainActivity, colorRes))
+        }
+        binding.indicatorStatus.background = dot
     }
 }

@@ -25,7 +25,10 @@ Connectivity / pairing check.
 - Response: `200` with body `pong` (text/plain).
 
 ### `POST /notify`
-Relay a phone notification → the receiver shows a native Windows toast.
+Relay a phone notification → the receiver surfaces it on the PC. Simple
+notifications become a native Windows toast; interactive notifications
+(`type: "media"` with actions, or `type: "message"` with `can_reply`) appear in
+the receiver's Android-style notification panel.
 - `Content-Type: application/json`
 - Body (JSON):
   ```json
@@ -36,14 +39,17 @@ Relay a phone notification → the receiver shows a native Windows toast.
     "nid":       3,
     "type":      "media | message | normal",
     "actions":   [ {"id": 0, "label": "Pause"}, {"id": 1, "label": "Next"} ],
+    "art":       "Optional base64-encoded JPEG image string",
     "can_reply": true
   }
   ```
   `title`, `text` and `app` are optional and may be empty strings. `nid` is a
   stable numeric id the phone uses to route command clicks back to the right
   notification (only needed when `actions` or `can_reply` are set). `actions`
-  lists media buttons as `{id, label}` pairs; `can_reply` is true when the app
-  exposes a RemoteInput reply action (Google Messages, WhatsApp, Telegram, ...).
+  lists media buttons as `{id, label}` pairs; `art` is an optional base64-encoded
+  JPEG thumbnail of the album artwork / notification picture; `can_reply` is
+  true when the app exposes a RemoteInput reply action (Google Messages,
+  WhatsApp, Telegram, ...).
 - Response: `200` → `{"ok": true}`.
 
 ### `POST /file`
@@ -57,30 +63,18 @@ Send a file → the receiver saves it to the user's Downloads folder.
 
 ### `GET /commands`
 PC → phone command channel (long-poll). The phone keeps one of these open at
-all times; when a toast button is clicked the receiver returns a command
-immediately, otherwise it holds the connection for ~30s and returns an empty
+all times; when a media button is pressed or a reply is sent on the PC panel,
+the receiver enqueues a command in-process and returns it immediately on the
+next poll. Otherwise it holds the connection for ~30s and returns an empty
 result, after which the phone re-polls.
 - Response: `200` → `{"command": {...} | null}`
 - Command payloads (sent to the phone):
   ```json
-  // a media button was clicked on the PC
+  // a media button was pressed on the PC panel
   {"type": "action", "nid": 3, "action_id": 0}
-  // a reply was sent from the PC
+  // a reply was sent from the PC panel
   {"type": "reply",  "nid": 4, "text": "on my way"}
   ```
-
-### `POST /action-click`
-Called by the Windows toast-button helper (the registered `sbconnect-action://`
-protocol) when the user clicks a button on a receiver toast. Queues a command
-for the phone's next `/commands` poll.
-- `Content-Type: application/json`
-- Body (JSON): a body with a `text` field becomes a `reply` command, otherwise
-  it becomes an `action` command:
-  ```json
-  {"nid": 3, "action_id": 0}
-  {"nid": 4, "text": "on my way"}
-  ```
-- Response: `200` → `{"ok": true}`.
 
 ### `GET /`
 Human-readable status page (no auth required) — convenient for browser testing.

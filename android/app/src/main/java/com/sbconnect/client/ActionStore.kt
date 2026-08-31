@@ -5,6 +5,7 @@ import android.app.RemoteInput
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -14,6 +15,8 @@ import java.util.concurrent.atomic.AtomicInteger
  * execute them when the user clicks a button on the PC.
  */
 object ActionStore {
+
+    private const val TAG = "ActionStore"
 
     private val mediaActions = ConcurrentHashMap<Int, Map<Int, Notification.Action>>()
     private val replyActions = ConcurrentHashMap<Int, Notification.Action>()
@@ -44,14 +47,26 @@ object ActionStore {
 
     /** Execute a media button by its index (pause / play / next / previous). */
     fun executeMediaAction(nid: Int, actionId: Int) {
-        mediaActions[nid]?.get(actionId)?.let { action ->
-            runCatching { action.actionIntent.send() }
+        val action = mediaActions[nid]?.get(actionId)
+        if (action == null) {
+            Log.w(TAG, "No media action for nid=$nid actionId=$actionId")
+            return
         }
+        Log.d(TAG, "Executing media action nid=$nid actionId=$actionId label=${action.title}")
+        runCatching { action.actionIntent.send() }
+            .onFailure { Log.w(TAG, "Media action send failed (nid=$nid actionId=$actionId)", it) }
     }
 
     /** Inject a reply into the app's RemoteInput-based reply action. */
     fun executeReply(context: Context, nid: Int, text: String) {
-        replyActions[nid]?.let { action -> runCatching { sendReply(context, action, text) } }
+        val action = replyActions[nid]
+        if (action == null) {
+            Log.w(TAG, "No reply action for nid=$nid")
+            return
+        }
+        Log.d(TAG, "Executing reply nid=$nid text=$text")
+        runCatching { sendReply(context, action, text) }
+            .onFailure { Log.w(TAG, "Reply send failed (nid=$nid)", it) }
     }
 
     private fun sendReply(context: Context, action: Notification.Action, text: String) {

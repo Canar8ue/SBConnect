@@ -1,6 +1,6 @@
 # SBConnect — Progress
 
-> **Status:** Working prototype — both sides built; Android APK built via GitHub Actions CI.
+> **Status:** Working prototype — revamped with authentic Android 14/15 Quick Settings & Material You design, real song album art support, and Material 3 Android settings UI.
 
 ## What this project is about
 
@@ -9,11 +9,12 @@ parts that talk to each other with one shared protocol:
 
 - **Windows Receiver Agent** (`windows/`) — an ultra-lightweight Python
   system-tray app that listens on the local network, shows incoming phone
-  notifications as native Windows toasts, and saves files the phone sends into
-  the user's **Downloads** folder.
-- **Android Client Agent** (`android/`) — a single-screen Kotlin app that uses a
+  notifications as native Windows toasts, provides a top-corner **Android Quick Settings shade**
+  with full media controls, real song album artwork, quick toggles, and inline message replies,
+  and saves files the phone sends into the user's **Downloads** folder.
+- **Android Client Agent** (`android/`) — a Material 3 Kotlin app that uses a
   Notification Listener + persistent foreground service to capture and stream
-  notifications, and can send a picked file over to the PC.
+  notifications (with album art extraction), and can send picked files to the PC.
 
 The phone is the HTTP client; the PC is the HTTP server (port `45800` by
 default). Every request is authenticated with a shared pairing code.
@@ -41,55 +42,49 @@ default). Every request is authenticated with a shared pairing code.
   renders. Pairing code persists across restarts. Config stored at
   `~\.sbconnect\` (chosen to avoid the Microsoft Store Python's AppData
   virtualization).
-- **Android client** — complete, compile-grade Kotlin source project (22 files):
+- **Android client** — complete, compile-grade Kotlin source project:
   `NotificationRelayService` (filters ongoing/group-summary/self), `RelayService`
   (dataSync foreground service), `RelayClient` (HttpURLConnection singleton),
-  `MainActivity` (single screen + permissions + SAF file send), `Prefs`. Not yet
-  compiled locally — no JDK/Android SDK on this machine.
+  `MainActivity` (single screen + permissions + SAF file send), `Prefs`.
 - **GitHub push + CI build** — pushed the repo to
   `github.com/Canar8ue/SBConnect` (`main`, commit `e4b7eda`). The GitHub Actions
   workflow (`.github/workflows/build-android.yml`) built the debug APK
-  successfully on push (JDK 17 + Gradle 8.7) — the first real compile of the
-  Android code passed. The APK was downloaded locally as `SBConnect-debug.apk`
-  (~5.8 MB).
-
+  successfully on push (JDK 17 + Gradle 8.7).
 - **Notification relay hardening** — fixed RCS/chat notifications being missed:
-  the listener now self-configures from saved settings (works even if the
-  foreground service isn't running), and text extraction handles Messaging-style
-  (chat/SMS/RCS), Inbox-style, and text-lines notifications. Windows toasts now
-  show the source app name. Pinned a debug signing keystore so CI updates install
-  over the previous build without uninstalling (which would reset notification
-  access).
-- **Toast rendering fix** — media toasts were silently not displaying: the
-  action-button URIs contained a raw `&`, which made the toast XML invalid
-  (Windows rejected the whole toast). Switched to path-based button URIs
-  (`sbconnect-action://click/<nid>/<action_id>`) and XML-escaped labels; media
-  toasts with buttons now render. Windows-side only — no APK rebuild needed.
-- **Media controls + replies** — added a PC→phone command channel (long-poll
-  on `/commands`): media notifications now arrive with play/pause/next buttons
-  on the toast, and message notifications get a **Reply** button that opens a
-  text box on the PC and injects the reply on the phone (RemoteInput). Windows
-  side tested end-to-end (button → helper → receiver → command delivered);
-  Android APK rebuilt successfully via CI with these features.
+  the listener self-configures from saved settings, and text extraction handles
+  Messaging-style (chat/SMS/RCS), Inbox-style, and text-lines notifications.
+- **Media controls + replies** — added PC→phone command channel (long-poll
+  on `/commands`): media notifications arrive with play/pause/next buttons,
+  and message notifications support inline reply from the PC.
+- **Top-corner control-center shade** — custom Tkinter panel pinned to the
+  top edge with gesture grabber pill, clock, utility tiles, and slide-in animations.
+- **Android Quick Settings & Material You UI Revamp + Album Art Display**:
+  - **Windows Quick Settings Shade (`panel.py`)**: Redesigned to look like modern
+    Android 14/15 Quick Settings & Notification shade:
+    - **Header**: Android digital clock (`20pt bold`), date (`Mon, Aug 31`), device status chip (`● SBConnect` with active green pulse dot), and gesture grabber handle.
+    - **2-Column Quick Settings Pill Tiles**: Material You rounded pill toggles (`radius 20px`, height `54px`) for Receiver Status (`📶`), Pairing Code (`🔑`), Downloads (`📥`), and Settings (`⚙`).
+    - **Android 14/15 Media Player Widget (Now Playing)**: Real album art decoding (PIL Lanczos scaling + antialiased rounded corner mask `radius 18px`), app badge (`♫ Spotify`), track title, artist name, authentic Android scrubber track with progress fill & thumb, circular secondary controls (`⏮`, `⏭`), and centerpiece circular Material You FAB play/pause button (`50x50px`, `#A8C7FA`).
+    - **Material 3 Message Cards**: App icon badges, timestamp (`· now`), sender bold title, message text, and Material You inline reply input with active Send pill.
+  - **Real Song Album Art Protocol & Pipeline**:
+    - `NotificationRelayService.kt` extracts album artwork from `largeIcon`, `EXTRA_LARGE_ICON`, or `EXTRA_PICTURE`, scales to max 256x256, compresses to JPEG Base64, and attaches to `/notify`.
+    - `PROTOCOL.md` and `server.py` updated with `MAX_NOTIFY_BYTES = 512KB` and `art` payload field.
+  - **Android Settings UI Screen (`activity_main.xml`, `themes.xml`, `colors.xml`, `MainActivity.kt`)**:
+    - Authentic Material 3 Android Settings design with headline header, Hero Connection Status Card with live status dot, rounded Material 3 text inputs (`16dp` corner radius), Grouped Permission Cards with action chips, and Quick File Transfer row.
 
 ## Next steps
 
-- [x] Build the Android APK in CI (GitHub Actions workflow added).
-- [x] Download the built APK (saved locally as `SBConnect-debug.apk`).
-- [ ] Install the APK on a phone; grant Notification access + battery exemption.
-- [ ] Test media buttons (play/pause/skip) with a real music app.
-- [ ] Test replying to a text from the PC (Google Messages).
-- [ ] Run both sides together on a real phone + PC over Wi-Fi and verify pairing.
+- [ ] Push changes to GitHub repository to trigger the CI APK build.
+- [ ] Download updated `SBConnect-debug.apk` with the Material 3 UI and album art relaying.
+- [ ] Test playing music on phone (Spotify / YT Music) and verify album art & media controls on PC.
+- [ ] Test replying to text messages from the PC Quick Settings shade.
 - [ ] Allow `python.exe` through Windows Firewall on **Private** networks.
-- [ ] Nice-to-haves: auto-start the receiver on login, auto-reconnect on Android,
-      mDNS auto-discovery of the PC, TLS instead of plain HTTP.
 
 ## File tree
 
 ```
 SBConnect/
 ├── progress.md                         # project progress log
-├── PROTOCOL.md                         # network protocol spec
+├── PROTOCOL.md                         # network protocol spec (with art support)
 ├── README.md                           # overview + quickstart
 ├── .gitignore                          # ignored build artifacts
 ├── .github/workflows/
@@ -97,16 +92,17 @@ SBConnect/
 │
 ├── windows/                            # Windows Receiver Agent
 │   ├── README.md                       # receiver setup docs
-│   ├── requirements.txt                # Python dependencies
+│   ├── requirements.txt                # Python dependencies (pystray, Pillow, winotify)
 │   ├── run.bat                         # double-click launcher
-│   ├── sbconnect_action.py             # toast button helper
 │   └── sbconnect_receiver/
 │       ├── __init__.py                 # package metadata
 │       ├── __main__.py                 # entry point (tray+server)
 │       ├── config.py                   # config + pairing code
+│       ├── notifications.py            # panel-vs-toast router (with art forwarding)
+│       ├── panel.py                    # Android Quick Settings shade (Material You + album art)
 │       ├── paths.py                    # Downloads + safe names
-│       ├── server.py                   # HTTP receive server
-│       └── toasts.py                   # toast notifications
+│       ├── server.py                   # HTTP receive server (512KB notify buffer)
+│       └── toasts.py                   # native toast notifications
 │
 └── android/                            # Android Client Agent
     ├── README.md                       # Android build docs
@@ -123,17 +119,17 @@ SBConnect/
         └── src/main/
             ├── AndroidManifest.xml     # manifest + permissions
             ├── java/com/sbconnect/client/
-            │   ├── MainActivity.kt     # main UI screen
+            │   ├── MainActivity.kt     # Material 3 settings UI controller
             │   ├── RelayService.kt     # foreground service
-            │   ├── NotificationRelayService.kt  # notification listener
-            │   ├── RelayClient.kt      # HTTP client
+            │   ├── NotificationRelayService.kt  # notification listener + album art extraction
+            │   ├── RelayClient.kt      # HTTP client (art support)
             │   ├── ActionStore.kt      # action storage/execution
             │   └── Prefs.kt            # settings storage
             └── res/
-                ├── layout/activity_main.xml            # screen layout
+                ├── layout/activity_main.xml            # Android Settings page layout
                 ├── values/strings.xml                  # UI strings
-                ├── values/colors.xml                   # theme colors
-                ├── values/themes.xml                   # app theme
+                ├── values/colors.xml                   # Material You color tokens
+                ├── values/themes.xml                   # Material 3 settings theme
                 ├── values/ic_launcher_background.xml   # icon bg color
                 ├── drawable/ic_launcher_foreground.xml # icon glyph
                 ├── xml/network_security_config.xml     # allow cleartext

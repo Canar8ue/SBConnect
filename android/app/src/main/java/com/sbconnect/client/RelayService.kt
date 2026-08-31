@@ -84,8 +84,9 @@ class RelayService : Service() {
         super.onDestroy()
     }
 
-    /** Execute a command that arrived from the PC (toast button click). */
+    /** Execute a command that arrived from the PC (panel button / reply). */
     private fun handleCommand(cmd: JSONObject) {
+        Log.d(TAG, "Command from PC: $cmd")
         when (cmd.optString("type")) {
             "action" -> ActionStore.executeMediaAction(
                 cmd.optInt("nid", -1),

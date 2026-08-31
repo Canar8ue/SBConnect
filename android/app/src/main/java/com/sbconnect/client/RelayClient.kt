@@ -88,6 +88,7 @@ object RelayClient {
         type: String = "normal",
         actions: List<Pair<Int, String>> = emptyList(),
         canReply: Boolean = false,
+        art: String? = null,
     ) {
         if (!isConfigured()) return
         executor.execute {
@@ -100,6 +101,9 @@ object RelayClient {
                     .put("type", type)
                     .put("can_reply", canReply)
                     .apply {
+                        if (!art.isNullOrBlank()) {
+                            put("art", art)
+                        }
                         val arr = JSONArray()
                         for ((id, label) in actions) {
                             arr.put(JSONObject().put("id", id).put("label", label))

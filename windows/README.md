@@ -5,6 +5,21 @@ Android phone. It listens on the local network, shows incoming phone
 notifications as native Windows toasts, and saves any files your phone sends
 straight into your **Downloads** folder.
 
+## Features
+
+- **Notifications** — phone notifications appear as native Windows toasts
+  (titled with the source app).
+- **Media controls** — while music plays on your phone, the toast shows the
+  track with **Previous / Play / Pause / Next** buttons that control the phone
+  remotely (works with Spotify, YouTube Music, etc.).
+- **Reply to texts** — messages from apps with a reply action (Google Messages,
+  WhatsApp, Telegram, ...) show a **Reply** button; clicking it opens a text box
+  on the PC and the reply is sent from your phone.
+- **File drop** — files shared from the phone land in your Downloads folder.
+
+Media/reply buttons work over a lightweight long-poll channel the phone keeps
+open — button clicks are delivered in well under a second.
+
 ## Stack
 
 - **Python 3** (stdlib HTTP server — no web framework).

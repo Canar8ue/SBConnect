@@ -64,7 +64,8 @@ default). Every request is authenticated with a shared pairing code.
   on `/commands`): media notifications now arrive with play/pause/next buttons
   on the toast, and message notifications get a **Reply** button that opens a
   text box on the PC and injects the reply on the phone (RemoteInput). Windows
-  side tested end-to-end (button → helper → receiver → command delivered).
+  side tested end-to-end (button → helper → receiver → command delivered);
+  Android APK rebuilt successfully via CI with these features.
 
 ## Next steps
 

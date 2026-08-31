@@ -10,7 +10,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:paddingHorizontal="18dp"
+        android:paddingLeft="18dp"
+        android:paddingRight="18dp"
         android:paddingTop="36dp"
         android:paddingBottom="48dp">
 
@@ -33,11 +34,13 @@
 
         <!-- 1. Hero Connection Status Card -->
         <com.google.android.material.card.MaterialCardView
-            style="@style/Widget.SBConnect.Card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
-            app:cardCornerRadius="24dp">
+            app:cardBackgroundColor="@color/surface_container"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -122,11 +125,13 @@
 
         <!-- 2. Connection Settings Card -->
         <com.google.android.material.card.MaterialCardView
-            style="@style/Widget.SBConnect.Card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            app:cardCornerRadius="24dp">
+            app:cardBackgroundColor="@color/surface_container"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -135,7 +140,7 @@
                 android:padding="18dp">
 
                 <com.google.android.material.textfield.TextInputLayout
-                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="@string/hint_host"
@@ -157,7 +162,7 @@
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
-                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
@@ -180,7 +185,7 @@
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
-                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
@@ -217,11 +222,13 @@
 
         <!-- 3. Permissions Group Card -->
         <com.google.android.material.card.MaterialCardView
-            style="@style/Widget.SBConnect.Card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            app:cardCornerRadius="24dp">
+            app:cardBackgroundColor="@color/surface_container"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -261,10 +268,10 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/buttonNotificationAccess"
-                        style="?attr/materialButtonTonalStyle"
+                        style="?attr/materialButtonOutlinedStyle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:backgroundTint="@color/surface_container_high"
+                        android:strokeColor="@color/outline"
                         android:text="Grant"
                         android:textColor="@color/primary"
                         app:cornerRadius="18dp" />
@@ -273,7 +280,8 @@
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
-                    android:layout_marginVertical="12dp"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginBottom="12dp"
                     android:background="@color/outline_variant" />
 
                 <!-- Battery Exemption Row -->
@@ -308,10 +316,10 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/buttonBattery"
-                        style="?attr/materialButtonTonalStyle"
+                        style="?attr/materialButtonOutlinedStyle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:backgroundTint="@color/surface_container_high"
+                        android:strokeColor="@color/outline"
                         android:text="Settings"
                         android:textColor="@color/primary"
                         app:cornerRadius="18dp" />
@@ -332,11 +340,13 @@
 
         <!-- 4. Quick Tools Card -->
         <com.google.android.material.card.MaterialCardView
-            style="@style/Widget.SBConnect.Card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            app:cardCornerRadius="24dp">
+            app:cardBackgroundColor="@color/surface_container"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -370,10 +380,10 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/buttonSendFile"
-                    style="?attr/materialButtonTonalStyle"
+                    style="?attr/materialButtonOutlinedStyle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:backgroundTint="@color/surface_container_high"
+                    android:strokeColor="@color/outline"
                     android:text="Choose"
                     android:textColor="@color/primary"
                     app:cornerRadius="18dp" />

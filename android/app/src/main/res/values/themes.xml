@@ -1,38 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Base Material 3 Theme styled like Android Settings -->
+    <!-- Base application theme. Material3 themes extend AppCompat, so this
+         works with AppCompatActivity. -->
     <style name="Theme.SBConnect" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">@color/primary</item>
         <item name="colorOnPrimary">@color/on_primary</item>
-        <item name="colorPrimaryContainer">@color/primary_container</item>
-        <item name="colorOnPrimaryContainer">@color/on_primary_container</item>
         <item name="colorSecondary">@color/secondary</item>
-        <item name="colorOnSecondary">@color/on_secondary</item>
-        <item name="colorSurface">@color/surface</item>
-        <item name="colorOnSurface">@color/on_surface</item>
-        <item name="colorOnSurfaceVariant">@color/on_surface_variant</item>
-        <item name="colorOutline">@color/outline</item>
-        <item name="android:statusBarColor">@color/surface</item>
-        <item name="android:navigationBarColor">@color/surface</item>
-    </style>
-
-    <!-- Rounded Material Card style for Android Settings groups -->
-    <style name="Widget.SBConnect.Card" parent="Widget.Material3.CardView.Filled">
-        <item name="cardBackgroundColor">@color/surface_container</item>
-        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.SBConnect.LargeCard</item>
-        <item name="cardElevation">0dp</item>
-        <item name="strokeWidth">0dp</item>
-    </style>
-
-    <style name="ShapeAppearance.SBConnect.LargeCard" parent="ShapeAppearance.Material3.Corner.Large">
-        <item name="cornerSize">24dp</item>
-    </style>
-
-    <style name="ShapeAppearance.SBConnect.Pill" parent="ShapeAppearance.Material3.Corner.Full">
-        <item name="cornerSize">28dp</item>
-    </style>
-
-    <style name="ShapeAppearance.SBConnect.Input" parent="ShapeAppearance.Material3.Corner.Medium">
-        <item name="cornerSize">16dp</item>
+        <item name="android:statusBarColor">@color/primary_dark</item>
     </style>
 </resources>
